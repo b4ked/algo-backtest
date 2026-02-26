@@ -27,17 +27,18 @@ class Backtester:
         self.initial_capital = initial_capital
         self.commission = commission  # 0.1% per trade (realistic exchange fee)
 
-    def run(self, df: pd.DataFrame, strategy) -> dict:
+    def run(self, df: pd.DataFrame, strategy, summary_only: bool = False) -> dict:
         df = strategy.generate_signals(df.copy())
-        indicators = strategy.get_indicators(df)
+        indicators = strategy.get_indicators(df) if not summary_only else {}
 
         capital = self.initial_capital
         position = 0.0
         trades: List[Trade] = []
         current_trade: Optional[Trade] = None
-        equity_curve = []
+        equity_curve = [] if not summary_only else None
+        equity_values = []
         bh_shares = self.initial_capital / float(df.iloc[0]["close"]) if len(df) > 0 else 0.0
-        bh_curve = []
+        bh_curve = [] if not summary_only else None
 
         for idx, row in df.iterrows():
             price = float(row["close"])
@@ -45,14 +46,13 @@ class Backtester:
             ts = int(idx.timestamp())
 
             portfolio_value = capital + position * price
-            equity_curve.append({"time": ts, "value": round(portfolio_value, 2)})
-            bh_curve.append({"time": ts, "value": round(bh_shares * price, 2)})
+            equity_values.append(portfolio_value)
+            if not summary_only:
+                equity_curve.append({"time": ts, "value": round(portfolio_value, 2)})
+                bh_curve.append({"time": ts, "value": round(bh_shares * price, 2)})
 
             if sig == 1 and position == 0:
-                # Respect inverse-vol position sizing (e.g. from TSMOM), capped at 1×
-                ps = float(row["position_size"]) if "position_size" in row.index else 1.0
-                ps = max(0.01, min(ps, 1.0))
-                invest = capital * 0.99 * ps
+                invest = capital * 0.99
                 fee = invest * self.commission
                 invest_net = invest - fee
                 position = invest_net / price
@@ -95,16 +95,35 @@ class Backtester:
         avg_win = float(np.mean([t.pnl_pct for t in wins])) if wins else 0.0
         avg_loss = float(np.mean([t.pnl_pct for t in losses])) if losses else 0.0
 
-        eq_vals = [e["value"] for e in equity_curve]
-        max_dd = self._max_drawdown(eq_vals)
+        max_dd = self._max_drawdown(equity_values)
 
-        rets = pd.Series(eq_vals).pct_change().dropna()
+        rets = pd.Series(equity_values).pct_change().dropna()
         if rets.std() > 0:
             # Annualise based on timeframe
             periods_per_year = self._periods_per_year(df)
             sharpe = float(rets.mean() / rets.std() * np.sqrt(periods_per_year))
         else:
             sharpe = 0.0
+
+        metrics = {
+            "total_return": round(total_return * 100, 2),
+            "buy_hold_return": round(bh_return * 100, 2),
+            "final_capital": round(final_capital, 2),
+            "num_trades": len(trades),
+            "win_rate": round(win_rate * 100, 2),
+            "avg_win_pct": round(avg_win * 100, 2),
+            "avg_loss_pct": round(avg_loss * 100, 2),
+            "max_drawdown": round(max_dd * 100, 2),
+            "sharpe_ratio": round(sharpe, 2),
+            "profit_factor": self._profit_factor(wins, losses),
+        }
+
+        if summary_only:
+            return {
+                "strategy_name": strategy.name,
+                "params": strategy.params,
+                "metrics": metrics,
+            }
 
         # Candles
         candles = [
@@ -148,18 +167,7 @@ class Backtester:
             "trades": trade_markers,
             "equity_curve": equity_curve,
             "bh_curve": bh_curve,
-            "metrics": {
-                "total_return": round(total_return * 100, 2),
-                "buy_hold_return": round(bh_return * 100, 2),
-                "final_capital": round(final_capital, 2),
-                "num_trades": len(trades),
-                "win_rate": round(win_rate * 100, 2),
-                "avg_win_pct": round(avg_win * 100, 2),
-                "avg_loss_pct": round(avg_loss * 100, 2),
-                "max_drawdown": round(max_dd * 100, 2),
-                "sharpe_ratio": round(sharpe, 2),
-                "profit_factor": self._profit_factor(wins, losses),
-            },
+            "metrics": metrics,
         }
 
     @staticmethod

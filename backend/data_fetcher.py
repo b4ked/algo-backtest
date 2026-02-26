@@ -1,6 +1,7 @@
 import os
 import pickle
 import logging
+import re
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -38,6 +39,32 @@ PERIOD_DAYS = {
     "5y": 1825,
     "max": 99999,
 }
+
+
+def _period_to_days(period: str) -> int:
+    if not period:
+        return 365
+
+    period = str(period).strip().lower()
+    if period in PERIOD_DAYS:
+        return PERIOD_DAYS[period]
+
+    match = re.match(r"^(\d+)\s*(d|day|days|w|week|weeks|mo|month|months|y|yr|year|years)$", period)
+    if not match:
+        return 365
+
+    value = int(match.group(1))
+    unit = match.group(2)
+    if unit in {"d", "day", "days"}:
+        return value
+    if unit in {"w", "week", "weeks"}:
+        return value * 7
+    if unit in {"mo", "month", "months"}:
+        return value * 30
+    if unit in {"y", "yr", "year", "years"}:
+        return value * 365
+
+    return 365
 
 
 def _cache_path(key: str) -> str:
@@ -110,7 +137,7 @@ class DataFetcher:
         yf_interval = TIMEFRAME_MAP.get(timeframe, "1d")
         need_resample = timeframe == "4h"
 
-        req_days = PERIOD_DAYS.get(period, 365)
+        req_days = _period_to_days(period)
         max_days = MAX_DAYS.get(timeframe, 10000)
         actual_days = min(req_days, max_days)
 

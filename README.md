@@ -23,6 +23,25 @@ chmod +x start.sh
 
 Then open **http://localhost:5173**
 
+## Smart Algo Search UI (New, Isolated Frontend)
+
+This repo now also includes an isolated frontend for exhaustive strategy/config search and profitability ranking:
+
+```bash
+cd /Users/parryh/algo/smartalgo
+chmod +x start-smart-search.sh
+./start-smart-search.sh
+```
+
+Then open **http://localhost:5174**
+
+The new UI calls `POST /api/smart-search`, which:
+- Sweeps selected strategy parameters across configured ranges/steps
+- Executes backtests for all generated combinations
+- Returns ranked results ordered by profitability (`total_return`)
+
+Smart Search backend runs on **http://localhost:8001** to avoid collisions with other local algo projects using port 8000.
+
 ## Adding a New Strategy
 
 1. Create `backend/strategies/my_strategy.py`:

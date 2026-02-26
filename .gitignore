@@ -15,6 +15,9 @@ backend/strategies/__pycache__/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+smart-search-frontend/node_modules/
+smart-search-frontend/dist/
+smart-search-frontend/.vite/
 
 # Env / secrets
 .env
