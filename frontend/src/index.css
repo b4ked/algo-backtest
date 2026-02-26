@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --chart-bg: #070b14;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #070b14;
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1526;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e3a5f;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Custom range input */
+input[type='range'] {
+  appearance: none;
+  height: 4px;
+  background: #1e3a5f;
+  border-radius: 2px;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Number inputs */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Glow effects */
+.glow-green {
+  text-shadow: 0 0 8px #22c55e66;
+}
+.glow-red {
+  text-shadow: 0 0 8px #ef444466;
+}
+
+/* Animated gradient border for active card */
+@keyframes borderPulse {
+  0%, 100% { border-color: #1e3a5f; }
+  50% { border-color: #3b82f6; }
+}
+.pulse-border {
+  animation: borderPulse 2s ease-in-out infinite;
+}
+
+/* Chart container transitions */
+.chart-fade {
+  transition: opacity 0.3s ease;
+}

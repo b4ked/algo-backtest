@@ -1,0 +1,30 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/strategies/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Cache
+/tmp/btc_backtester_cache/
+*.pkl
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env / secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
