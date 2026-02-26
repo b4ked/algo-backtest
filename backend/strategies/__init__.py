@@ -8,7 +8,14 @@ from .combined_rsi_macd import CombinedRSIMACDStrategy
 from .mean_reversion import MeanReversionStrategy
 from .donchian_breakout import DonchianBreakoutStrategy
 
+# Advanced strategies
+from .ou_pairs_trading import OUPairsTradingStrategy
+from .tsmom import TSMOMStrategy
+from .xgboost_strategy import XGBoostStrategy
+from .ppo_strategy import PPOStrategy
+
 STRATEGIES = {
+    # ── Classic ──────────────────────────────────────────────────────────────
     "sma_crossover": SMACrossoverStrategy,
     "ema_crossover": EMACrossoverStrategy,
     "rsi": RSIStrategy,
@@ -18,6 +25,11 @@ STRATEGIES = {
     "combined_rsi_macd": CombinedRSIMACDStrategy,
     "mean_reversion": MeanReversionStrategy,
     "donchian_breakout": DonchianBreakoutStrategy,
+    # ── Advanced ──────────────────────────────────────────────────────────────
+    "ou_pairs_trading": OUPairsTradingStrategy,
+    "tsmom": TSMOMStrategy,
+    "xgboost": XGBoostStrategy,
+    "ppo": PPOStrategy,
 }
 
 __all__ = ["STRATEGIES"]

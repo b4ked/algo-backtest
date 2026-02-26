@@ -49,7 +49,10 @@ class Backtester:
             bh_curve.append({"time": ts, "value": round(bh_shares * price, 2)})
 
             if sig == 1 and position == 0:
-                invest = capital * 0.99
+                # Respect inverse-vol position sizing (e.g. from TSMOM), capped at 1×
+                ps = float(row["position_size"]) if "position_size" in row.index else 1.0
+                ps = max(0.01, min(ps, 1.0))
+                invest = capital * 0.99 * ps
                 fee = invest * self.commission
                 invest_net = invest - fee
                 position = invest_net / price

@@ -5,3 +5,13 @@ numpy==1.26.3
 yfinance>=1.0.0
 pydantic==2.5.3
 python-multipart==0.0.6
+
+# Statistical / classical ML
+statsmodels>=0.14.0
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+
+# Deep RL (large install — requires PyTorch)
+# Uncomment if you want the PPO strategy:
+stable-baselines3[extra]>=2.2.0
+gymnasium>=0.29.0

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 60_000,
+  timeout: 300_000,  // 5 min — ML strategies (XGBoost, PPO) may take 30–90 s
 })
 
 export async function fetchStrategies() {

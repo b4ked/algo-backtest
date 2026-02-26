@@ -37,6 +37,41 @@ function numInput(value, onChange, info) {
   )
 }
 
+function renderParamInput(value, defaultVal, info, onChange) {
+  const current = value ?? defaultVal
+  const type = info?.type ?? 'number'
+
+  if (type === 'select') {
+    return (
+      <div className="relative">
+        <select
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none bg-[#0d1526] border border-[#1e3a5f] rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500 transition-colors pr-6 cursor-pointer"
+        >
+          {(info.options || []).map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+      </div>
+    )
+  }
+
+  if (type === 'text') {
+    return (
+      <input
+        type="text"
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-[#0d1526] border border-[#1e3a5f] rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500 transition-colors"
+      />
+    )
+  }
+
+  return numInput(current, onChange, info)
+}
+
 export default function Sidebar({
   strategies,
   selectedStrategy,
@@ -175,10 +210,14 @@ export default function Sidebar({
                     <span className="text-xs text-slate-400">{info.label || key}</span>
                     <span className="text-xs font-mono text-slate-300">{params?.[key] ?? defaultVal}</span>
                   </div>
-                  {numInput(
-                    params?.[key] ?? defaultVal,
-                    (v) => onParamChange(key, Number(v)),
-                    info
+                  {renderParamInput(
+                    params?.[key],
+                    defaultVal,
+                    info,
+                    (v) => {
+                      const isStr = info?.type === 'select' || info?.type === 'text'
+                      onParamChange(key, isStr ? v : Number(v))
+                    }
                   )}
                 </div>
               )
