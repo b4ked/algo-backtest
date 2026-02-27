@@ -10,11 +10,18 @@ export async function fetchStrategies() {
   return data.strategies
 }
 
-export async function runBacktest({ strategy, timeframe, period, params, initialCapital }) {
+export async function searchSymbols(q) {
+  const { data } = await api.get('/search', { params: { q } })
+  return data.results || []
+}
+
+export async function runBacktest({ strategy, timeframe, startDate, endDate, symbol, params, initialCapital }) {
   const { data } = await api.post('/backtest', {
     strategy,
     timeframe,
-    period,
+    start_date: startDate,
+    end_date: endDate,
+    symbol,
     params,
     initial_capital: initialCapital,
   })
@@ -25,7 +32,9 @@ export async function compareStrategies({
   strategy1,
   strategy2,
   timeframe,
-  period,
+  startDate,
+  endDate,
+  symbol,
   params1,
   params2,
   initialCapital,
@@ -34,7 +43,9 @@ export async function compareStrategies({
     strategy1,
     strategy2,
     timeframe,
-    period,
+    start_date: startDate,
+    end_date: endDate,
+    symbol,
     params1,
     params2,
     initial_capital: initialCapital,

@@ -2,6 +2,7 @@ import os
 import pickle
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 import yfinance as yf
@@ -94,40 +95,47 @@ class DataFetcher:
     def __init__(self, symbol: str = "BTC-USD"):
         self.symbol = symbol
 
-    def fetch(self, timeframe: str = "1d", period: str = "1y") -> pd.DataFrame:
-        cache_key = f"{self.symbol}_{timeframe}_{period}"
+    def fetch(
+        self,
+        timeframe: str = "1d",
+        period: str = "1y",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        if start_date and end_date:
+            cache_key = f"{self.symbol}_{timeframe}_{start_date}_{end_date}"
+        else:
+            cache_key = f"{self.symbol}_{timeframe}_{period}"
+
         ttl = 300 if timeframe in ("5m", "15m", "1h", "4h") else 3600
         cached = _load_cache(cache_key, ttl)
         if cached is not None:
             logger.info("Cache hit: %s", cache_key)
             return cached
 
-        df = self._download(timeframe, period)
+        df = self._download(timeframe, period, start_date=start_date, end_date=end_date)
         _save_cache(cache_key, df)
         return df
 
-    def _download(self, timeframe: str, period: str) -> pd.DataFrame:
+    def _download(
+        self,
+        timeframe: str,
+        period: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
         yf_interval = TIMEFRAME_MAP.get(timeframe, "1d")
         need_resample = timeframe == "4h"
 
-        req_days = PERIOD_DAYS.get(period, 365)
-        max_days = MAX_DAYS.get(timeframe, 10000)
-        actual_days = min(req_days, max_days)
-
-        end = datetime.utcnow()
-        start = end - timedelta(days=actual_days)
-
-        logger.info("Downloading %s %s %s→%s", self.symbol, yf_interval, start.date(), end.date())
-
-        if actual_days >= 9000:
-            df = yf.download(
-                self.symbol,
-                period="max",
-                interval=yf_interval,
-                progress=False,
-                auto_adjust=True,
+        if start_date and end_date:
+            # Explicit date range from user
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            # Add one day to end so the end date is inclusive
+            end = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            logger.info(
+                "Downloading %s %s %s→%s (explicit range)",
+                self.symbol, yf_interval, start.date(), end.date(),
             )
-        else:
             df = yf.download(
                 self.symbol,
                 start=start.strftime("%Y-%m-%d"),
@@ -136,9 +144,43 @@ class DataFetcher:
                 progress=False,
                 auto_adjust=True,
             )
+        else:
+            # Fall back to period-based download
+            req_days = PERIOD_DAYS.get(period, 365)
+            max_days = MAX_DAYS.get(timeframe, 10000)
+            actual_days = min(req_days, max_days)
+
+            end = datetime.utcnow()
+            start = end - timedelta(days=actual_days)
+
+            logger.info(
+                "Downloading %s %s %s→%s (period: %s)",
+                self.symbol, yf_interval, start.date(), end.date(), period,
+            )
+
+            if actual_days >= 9000:
+                df = yf.download(
+                    self.symbol,
+                    period="max",
+                    interval=yf_interval,
+                    progress=False,
+                    auto_adjust=True,
+                )
+            else:
+                df = yf.download(
+                    self.symbol,
+                    start=start.strftime("%Y-%m-%d"),
+                    end=end.strftime("%Y-%m-%d"),
+                    interval=yf_interval,
+                    progress=False,
+                    auto_adjust=True,
+                )
 
         if df.empty:
-            raise ValueError(f"No data returned for {self.symbol} ({timeframe}, {period}). Check your internet connection.")
+            raise ValueError(
+                f"No data returned for {self.symbol} ({timeframe}). "
+                "Check symbol name or reduce the date range."
+            )
 
         df = _normalise(df)
 

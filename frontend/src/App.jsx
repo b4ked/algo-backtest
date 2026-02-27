@@ -6,11 +6,22 @@ import EquityChart from './components/EquityChart'
 import MetricsPanel from './components/MetricsPanel'
 import TradeList from './components/TradeList'
 import Sidebar from './components/Sidebar'
-import { Activity, GitCompare, AlertCircle, Bitcoin, Wifi, WifiOff } from 'lucide-react'
+import SymbolSearch from './components/SymbolSearch'
+import { Activity, GitCompare, AlertCircle, Wifi, WifiOff } from 'lucide-react'
 
-const DEFAULT_TIMEFRAME = '1d'
-const DEFAULT_PERIOD = '1y'
 const DEFAULT_CAPITAL = 10000
+
+function getDefaultDates() {
+  const today = new Date()
+  const oneYearAgo = new Date(today)
+  oneYearAgo.setFullYear(today.getFullYear() - 1)
+  return {
+    startDate: oneYearAgo.toISOString().split('T')[0],
+    endDate: today.toISOString().split('T')[0],
+  }
+}
+
+const { startDate: DEFAULT_START_DATE, endDate: DEFAULT_END_DATE } = getDefaultDates()
 
 export default function App() {
   const [mode, setMode] = useState('single') // 'single' | 'compare'
@@ -32,8 +43,10 @@ export default function App() {
   const [error2, setError2] = useState(null)
 
   // Shared settings
-  const [timeframe, setTimeframe] = useState(DEFAULT_TIMEFRAME)
-  const [period, setPeriod] = useState(DEFAULT_PERIOD)
+  const [symbol, setSymbol] = useState('BTC-USD')
+  const [timeframe, setTimeframe] = useState('1d')
+  const [startDate, setStartDate] = useState(DEFAULT_START_DATE)
+  const [endDate, setEndDate] = useState(DEFAULT_END_DATE)
   const [initialCapital, setInitialCapital] = useState(DEFAULT_CAPITAL)
 
   // Load strategies list
@@ -61,7 +74,15 @@ export default function App() {
     try {
       const strat = strategies.find((s) => s.id === strategy1)
       const mergedParams = { ...(strat?.default_params || {}), ...params1 }
-      const res = await runBacktest({ strategy: strategy1, timeframe, period, params: mergedParams, initialCapital })
+      const res = await runBacktest({
+        strategy: strategy1,
+        timeframe,
+        startDate,
+        endDate,
+        symbol,
+        params: mergedParams,
+        initialCapital,
+      })
       setResult1(res)
       setResult2(null)
     } catch (e) {
@@ -69,7 +90,7 @@ export default function App() {
     } finally {
       setLoading1(false)
     }
-  }, [strategy1, params1, timeframe, period, initialCapital, strategies])
+  }, [strategy1, params1, timeframe, startDate, endDate, symbol, initialCapital, strategies])
 
   const runCompare = useCallback(async () => {
     if (!strategy1 || !strategy2) return
@@ -86,7 +107,9 @@ export default function App() {
         strategy1,
         strategy2,
         timeframe,
-        period,
+        startDate,
+        endDate,
+        symbol,
         params1: mp1,
         params2: mp2,
         initialCapital,
@@ -101,7 +124,7 @@ export default function App() {
       setLoading1(false)
       setLoading2(false)
     }
-  }, [strategy1, strategy2, params1, params2, timeframe, period, initialCapital, strategies])
+  }, [strategy1, strategy2, params1, params2, timeframe, startDate, endDate, symbol, initialCapital, strategies])
 
   const hasOscillators = result1
     ? Object.values(result1.indicators || {}).some((v) => v.type === 'oscillator' || v.type === 'histogram')
@@ -115,13 +138,13 @@ export default function App() {
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#070b14]">
       {/* ── Header ── */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[#1e3a5f] bg-[#0d1526] flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Bitcoin size={20} className="text-amber-400" />
-          <span className="font-bold text-sm text-slate-100 tracking-tight">BTC Backtest Lab</span>
-        </div>
+        <span className="font-bold text-sm text-slate-100 tracking-tight whitespace-nowrap">Backtest Lab</span>
+
+        {/* Symbol search */}
+        <SymbolSearch symbol={symbol} onSymbolChange={setSymbol} />
 
         {/* Mode toggle */}
-        <div className="flex items-center bg-[#070b14] border border-[#1e3a5f] rounded-lg p-0.5 ml-4">
+        <div className="flex items-center bg-[#070b14] border border-[#1e3a5f] rounded-lg p-0.5 ml-2">
           <button
             onClick={() => setMode('single')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
@@ -146,7 +169,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* Status indicators */}
+        {/* Status */}
         <div className="ml-auto flex items-center gap-3">
           {backendOk === false && (
             <div className="flex items-center gap-1.5 text-xs text-red-400">
@@ -158,7 +181,6 @@ export default function App() {
               <Wifi size={13} /> Connected
             </div>
           )}
-          <span className="text-xs text-slate-600 font-mono">BTC-USD</span>
         </div>
       </header>
 
@@ -172,8 +194,10 @@ export default function App() {
             onStrategyChange={(v) => { setStrategy1(v); setParams1({}) }}
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
-            period={period}
-            onPeriodChange={setPeriod}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
             params={params1}
             onParamChange={handleParamChange1}
             initialCapital={initialCapital}
@@ -240,8 +264,10 @@ export default function App() {
               onStrategyChange={(v) => { setStrategy2(v); setParams2({}) }}
               timeframe={timeframe}
               onTimeframeChange={setTimeframe}
-              period={period}
-              onPeriodChange={setPeriod}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
               params={params2}
               onParamChange={handleParamChange2}
               initialCapital={initialCapital}

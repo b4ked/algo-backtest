@@ -1,27 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { TrendingUp, Clock, Calendar, DollarSign, Play, RefreshCw, ChevronDown } from 'lucide-react'
 
 const TIMEFRAMES = [
-  { value: '5m', label: '5m', maxPeriod: '7d' },
-  { value: '15m', label: '15m', maxPeriod: '1mo' },
-  { value: '1h', label: '1H', maxPeriod: '2y' },
-  { value: '4h', label: '4H', maxPeriod: '2y' },
-  { value: '1d', label: '1D', maxPeriod: 'max' },
-  { value: '1w', label: '1W', maxPeriod: 'max' },
+  { value: '5m',  label: '5m',  maxLookbackDays: 59 },
+  { value: '15m', label: '15m', maxLookbackDays: 59 },
+  { value: '1h',  label: '1H',  maxLookbackDays: 729 },
+  { value: '4h',  label: '4H',  maxLookbackDays: 729 },
+  { value: '1d',  label: '1D',  maxLookbackDays: 10000 },
+  { value: '1w',  label: '1W',  maxLookbackDays: 10000 },
 ]
 
-const PERIODS = [
-  { value: '7d', label: '7 Days' },
-  { value: '1mo', label: '1 Month' },
-  { value: '3mo', label: '3 Months' },
-  { value: '6mo', label: '6 Months' },
-  { value: '1y', label: '1 Year' },
-  { value: '2y', label: '2 Years' },
-  { value: '5y', label: '5 Years' },
-  { value: 'max', label: 'All Time' },
-]
+function getDateStr(daysAgo) {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  return d.toISOString().split('T')[0]
+}
 
-const PERIOD_ORDER = ['7d', '1mo', '3mo', '6mo', '1y', '2y', '5y', 'max']
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
+}
 
 function numInput(value, onChange, info) {
   return (
@@ -78,8 +75,10 @@ export default function Sidebar({
   onStrategyChange,
   timeframe,
   onTimeframeChange,
-  period,
-  onPeriodChange,
+  startDate,
+  onStartDateChange,
+  endDate,
+  onEndDateChange,
   params,
   onParamChange,
   initialCapital,
@@ -91,17 +90,15 @@ export default function Sidebar({
 }) {
   const strategy = strategies?.find((s) => s.id === selectedStrategy)
   const tfConfig = TIMEFRAMES.find((t) => t.value === timeframe)
+  const maxLookbackDays = tfConfig?.maxLookbackDays ?? 10000
+  const minStartDate = getDateStr(maxLookbackDays)
 
-  // Filter periods based on timeframe max
-  const maxPeriodIdx = PERIOD_ORDER.indexOf(tfConfig?.maxPeriod || 'max')
-  const availablePeriods = PERIODS.filter((p) => PERIOD_ORDER.indexOf(p.value) <= maxPeriodIdx)
-
+  // Clamp start date when timeframe changes to a more restricted one
   useEffect(() => {
-    // If current period exceeds max for this timeframe, reset it
-    if (tfConfig && PERIOD_ORDER.indexOf(period) > maxPeriodIdx) {
-      onPeriodChange(tfConfig.maxPeriod)
+    if (startDate && startDate < minStartDate) {
+      onStartDateChange(minStartDate)
     }
-  }, [timeframe])
+  }, [timeframe]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const accent = accentColor === 'purple' ? 'border-purple-500 text-purple-400' : 'border-blue-500 text-blue-400'
   const btnColor = accentColor === 'purple' ? 'bg-purple-600 hover:bg-purple-500' : 'bg-blue-600 hover:bg-blue-500'
@@ -160,25 +157,36 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Period */}
-      <div className="space-y-1">
+      {/* Date Range */}
+      <div className="space-y-2">
         <label className="text-xs text-slate-500 flex items-center gap-1">
-          <Calendar size={11} /> Period
+          <Calendar size={11} /> Date Range
         </label>
-        <div className="flex flex-wrap gap-1">
-          {availablePeriods.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => onPeriodChange(p.value)}
-              className={`px-2 py-1 text-xs rounded border transition-all ${
-                period === p.value
-                  ? `${accent} bg-blue-950/30`
-                  : 'border-[#1e3a5f] text-slate-500 hover:border-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="space-y-1.5">
+          <div className="space-y-0.5">
+            <span className="text-xs text-slate-600">Start</span>
+            <input
+              type="date"
+              value={startDate}
+              min={minStartDate}
+              max={endDate}
+              onChange={(e) => onStartDateChange(e.target.value)}
+              style={{ colorScheme: 'dark' }}
+              className="w-full bg-[#0d1526] border border-[#1e3a5f] rounded px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-xs text-slate-600">End</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={todayStr()}
+              onChange={(e) => onEndDateChange(e.target.value)}
+              style={{ colorScheme: 'dark' }}
+              className="w-full bg-[#0d1526] border border-[#1e3a5f] rounded px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
