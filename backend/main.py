@@ -1,5 +1,6 @@
 import logging
 import os
+from threading import Lock
 from typing import Any, Dict, Optional
 
 import requests as _req
@@ -14,6 +15,52 @@ from strategies import STRATEGIES
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Yahoo Finance authenticated session (cached module-level for reuse).
+# Yahoo Finance blocks unauthenticated requests from datacenter IPs unless
+# the caller first visits finance.yahoo.com to acquire the GUCS consent
+# cookie.  We build the session once at startup and refresh if it expires.
+# ---------------------------------------------------------------------------
+_YF_SESSION: Optional[_req.Session] = None
+_YF_SESSION_LOCK = Lock()
+
+_BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+}
+
+
+def _build_yf_session() -> _req.Session:
+    """Create a requests.Session with Yahoo Finance consent cookies."""
+    session = _req.Session()
+    session.headers.update(_BROWSER_HEADERS)
+    try:
+        session.get("https://finance.yahoo.com", timeout=8, allow_redirects=True)
+        logger.info("Yahoo Finance session initialised (cookies: %s)", list(session.cookies.keys()))
+    except Exception as exc:
+        logger.warning("Could not prime Yahoo Finance session: %s", exc)
+    return session
+
+
+def _get_yf_session() -> _req.Session:
+    global _YF_SESSION
+    with _YF_SESSION_LOCK:
+        if _YF_SESSION is None:
+            _YF_SESSION = _build_yf_session()
+        return _YF_SESSION
+
+
+def _reset_yf_session() -> _req.Session:
+    global _YF_SESSION
+    with _YF_SESSION_LOCK:
+        _YF_SESSION = _build_yf_session()
+        return _YF_SESSION
 
 app = FastAPI(title="BTC Backtest Lab API", version="1.0.0")
 
@@ -61,6 +108,13 @@ class CompareRequest(BaseModel):
     symbol: str = "BTC-USD"
 
 
+@app.on_event("startup")
+async def _startup():
+    """Pre-warm the Yahoo Finance session so the first search is instant."""
+    import threading
+    threading.Thread(target=_get_yf_session, daemon=True).start()
+
+
 @app.get("/api/strategies")
 def list_strategies():
     return {
@@ -71,32 +125,43 @@ def list_strategies():
     }
 
 
+def _do_yf_search(q: str, session: _req.Session) -> list:
+    resp = session.get(
+        "https://query1.finance.yahoo.com/v1/finance/search",
+        params={"q": q, "quotesCount": 10, "newsCount": 0, "enableFuzzyQuery": True},
+        timeout=6,
+    )
+    resp.raise_for_status()
+    return resp.json().get("quotes", [])
+
+
 @app.get("/api/search")
 def search_symbols(q: str):
     """Search Yahoo Finance for matching symbols."""
+    quotes = []
     try:
-        resp = _req.get(
-            "https://query1.finance.yahoo.com/v1/finance/search",
-            params={"q": q, "quotesCount": 10, "newsCount": 0, "enableFuzzyQuery": True},
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=5,
-        )
-        resp.raise_for_status()
-        quotes = resp.json().get("quotes", [])
-        return {
-            "results": [
-                {
-                    "symbol": item.get("symbol", ""),
-                    "name": item.get("shortname") or item.get("longname", ""),
-                    "exchange": item.get("exchange", ""),
-                    "type": item.get("quoteType", ""),
-                }
-                for item in quotes
-                if item.get("symbol")
-            ]
-        }
-    except Exception:
-        return {"results": []}
+        session = _get_yf_session()
+        quotes = _do_yf_search(q, session)
+    except Exception as exc:
+        logger.warning("YF search attempt 1 failed (%s) — refreshing session", exc)
+        try:
+            session = _reset_yf_session()
+            quotes = _do_yf_search(q, session)
+        except Exception as exc2:
+            logger.error("YF search attempt 2 failed: %s", exc2)
+
+    return {
+        "results": [
+            {
+                "symbol": item.get("symbol", ""),
+                "name": item.get("shortname") or item.get("longname", ""),
+                "exchange": item.get("exchDisp") or item.get("exchange", ""),
+                "type": item.get("quoteType", ""),
+            }
+            for item in quotes
+            if item.get("symbol")
+        ]
+    }
 
 
 @app.post("/api/backtest")
