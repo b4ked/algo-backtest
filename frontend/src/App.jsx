@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchStrategies, runBacktest, compareStrategies } from './api/client'
 import MainChart from './components/MainChart'
 import OscillatorChart from './components/OscillatorChart'
@@ -58,6 +58,24 @@ export default function App() {
       })
       .catch(() => setBackendOk(false))
   }, [])
+
+  // Re-run backtest automatically whenever the symbol changes.
+  // Skip the very first render so we don't fire before strategies have loaded.
+  const isInitialSymbol = useRef(true)
+  useEffect(() => {
+    if (isInitialSymbol.current) {
+      isInitialSymbol.current = false
+      return
+    }
+    setResult1(null)
+    setResult2(null)
+    setError1(null)
+    setError2(null)
+    if (!strategy1 || !strategies.length) return
+    if (mode === 'single') runSingle()
+    else runCompare()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol])
 
   const handleParamChange1 = useCallback((key, val) => {
     setParams1((prev) => ({ ...prev, [key]: val }))
