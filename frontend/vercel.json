@@ -1,8 +1,8 @@
 {
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://api.parrytech.co/api/$1"
-    }
+    { "source": "/api/strategies", "destination": "https://api.parrytech.co/api/strategies" },
+    { "source": "/api/backtest",   "destination": "https://api.parrytech.co/api/backtest" },
+    { "source": "/api/compare",    "destination": "https://api.parrytech.co/api/compare" },
+    { "source": "/api/health",     "destination": "https://api.parrytech.co/api/health" }
   ]
 }
