@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: '/api',
   timeout: 300_000,  // 5 min — ML strategies (XGBoost, PPO) may take 30–90 s
 })
 
