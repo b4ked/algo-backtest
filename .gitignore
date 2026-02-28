@@ -8,7 +8,7 @@ backend/strategies/__pycache__/
 .Python
 
 # Cache
-/tmp/btc_backtester_cache/
+/tmp/backtest_lab_cache/
 *.pkl
 
 # Node

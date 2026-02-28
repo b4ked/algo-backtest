@@ -32,9 +32,9 @@ except ImportError:
 # ── environment ───────────────────────────────────────────────────────────────
 
 if HAS_SB3:
-    class BTCTradingEnv(gym.Env):
+    class TradingEnv(gym.Env):
         """
-        Custom Gymnasium environment for BTC intraday trading.
+        Custom Gymnasium environment for intraday trading.
 
         State  : sliding window of normalised technical features + position flag
         Action : 0=Hold  1=Long  2=Exit
@@ -180,7 +180,7 @@ if HAS_SB3:
 
 else:
     # Stub so import doesn't fail when sb3 is absent
-    class BTCTradingEnv:  # type: ignore[no-redef]
+    class TradingEnv:  # type: ignore[no-redef]
         pass
 
 
@@ -222,7 +222,7 @@ class PPOStrategy(BaseStrategy):
         n_steps_total = int(self.params["training_steps"])
 
         # ── Environment setup ─────────────────────────────────────────────────
-        env = BTCTradingEnv(
+        env = TradingEnv(
             df,
             lookback=lookback,
             transaction_cost=0.001,

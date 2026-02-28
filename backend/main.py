@@ -62,7 +62,7 @@ def _reset_yf_session() -> _req.Session:
         _YF_SESSION = _build_yf_session()
         return _YF_SESSION
 
-app = FastAPI(title="BTC Backtest Lab API", version="1.0.0")
+app = FastAPI(title="Backtest Lab API", version="1.0.0")
 
 cors_allow_origins = [
     origin.strip()

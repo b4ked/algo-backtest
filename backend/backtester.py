@@ -9,7 +9,7 @@ import pandas as pd
 class Trade:
     entry_time: int
     entry_price: float
-    size: float  # BTC amount
+    size: float  # asset amount
     exit_time: Optional[int] = None
     exit_price: Optional[float] = None
     pnl: Optional[float] = None

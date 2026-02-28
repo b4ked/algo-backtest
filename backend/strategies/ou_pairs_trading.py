@@ -3,11 +3,11 @@ Statistical Arbitrage: Ornstein-Uhlenbeck Pairs Trading
 ========================================================
 Discretises the continuous-time OU SDE into an AR(1) model, solves for
 mean-reversion speed (κ), equilibrium mean (μ) and half-life, then trades
-the BTC / pair spread based on a rolling Z-score.
+the asset / pair spread based on a rolling Z-score.
 
 Signal logic
-  Z < -z_entry  → Long spread  (buy BTC, BTC cheap vs pair)
-  Z > +z_entry  → Short spread / exit long (BTC expensive vs pair)
+  Z < -z_entry  → Long spread  (buy asset, asset cheap vs pair)
+  Z > +z_entry  → Short spread / exit long (asset expensive vs pair)
   |Z| < z_exit  → Liquidate (spread reverted to mean)
 """
 

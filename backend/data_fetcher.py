@@ -9,7 +9,7 @@ import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = "/tmp/btc_backtester_cache"
+CACHE_DIR = "/tmp/backtest_lab_cache"
 
 TIMEFRAME_MAP = {
     "5m": "5m",

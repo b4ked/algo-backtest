@@ -5,7 +5,7 @@ from .base import BaseStrategy
 
 class SupertrendStrategy(BaseStrategy):
     name = "SuperTrend"
-    description = "Trend-following strategy using the SuperTrend indicator based on ATR. Follows Bitcoin's directional trend."
+    description = "Trend-following strategy using the SuperTrend indicator based on ATR. Follows the asset's directional trend."
     default_params = {"atr_period": 10, "multiplier": 3.0}
     param_info = {
         "atr_period": {"label": "ATR Period", "min": 5, "max": 50, "step": 1},

@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
-import { TrendingUp, Clock, Calendar, DollarSign, Play, RefreshCw, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { TrendingUp, Clock, Calendar, DollarSign, Play, RefreshCw, ChevronDown, Info } from 'lucide-react'
+import StrategyInfo from './StrategyInfo'
 
 const TIMEFRAMES = [
   { value: '5m',  label: '5m',  maxLookbackDays: 59 },
@@ -88,6 +89,7 @@ export default function Sidebar({
   label = 'Strategy',
   accentColor = 'blue',
 }) {
+  const [showInfo, setShowInfo] = useState(false)
   const strategy = strategies?.find((s) => s.id === selectedStrategy)
   const tfConfig = TIMEFRAMES.find((t) => t.value === timeframe)
   const maxLookbackDays = tfConfig?.maxLookbackDays ?? 10000
@@ -131,7 +133,16 @@ export default function Sidebar({
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         </div>
         {strategy && (
-          <p className="text-xs text-slate-500 leading-relaxed mt-1">{strategy.description}</p>
+          <div className="flex items-start gap-1.5 mt-1">
+            <p className="text-xs text-slate-500 leading-relaxed flex-1">{strategy.description}</p>
+            <button
+              onClick={() => setShowInfo(true)}
+              title="Strategy details"
+              className="flex-shrink-0 text-slate-600 hover:text-blue-400 transition-colors mt-0.5"
+            >
+              <Info size={13} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -262,6 +273,15 @@ export default function Sidebar({
           </>
         )}
       </button>
+
+      {/* Strategy info modal */}
+      {showInfo && strategy && (
+        <StrategyInfo
+          strategyId={selectedStrategy}
+          strategyName={strategy.name}
+          onClose={() => setShowInfo(false)}
+        />
+      )}
     </div>
   )
 }
